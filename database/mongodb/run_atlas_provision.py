@@ -74,9 +74,9 @@ def main():
             if name:
                 kwargs['name'] = name
             coll.create_index(index_keys, **kwargs)
-            print(f"    └─ Index created on {coll_name}: {index_keys}")
+            print(f"    -> Index created on {coll_name}: {index_keys}")
         except Exception as ex:
-            print(f"    └─ [!] Index creation warning on {coll_name}: {ex}")
+            print(f"    -> [!] Index creation warning on {coll_name}: {ex}")
 
     # =========================================================================
     # MODULE 1: ACADEMIC MANAGEMENT
