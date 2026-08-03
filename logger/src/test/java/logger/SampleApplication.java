@@ -5,8 +5,10 @@ import logger.constants.AuditConstants;
 import logger.dto.UserPrincipal;
 import logger.encryption.EncryptionUtils;
 import logger.jwt.JwtProvider;
+import logger.logging.AppLogger;
 import logger.logging.AuditContextHolder;
 import logger.logging.AuditLogger;
+import logger.response.ApiResponse;
 import logger.version.Version;
 
 import java.util.Arrays;
@@ -100,7 +102,32 @@ public class SampleApplication {
                 .message("User logged in successfully")
                 .executionTime(10)
                 .log();
-        System.clearProperty("campxsync.logger.format");
+        // 5. Runtime Failure & Exception Logging Demo
+        System.out.println("\n--- 5. Simulating Runtime Exception & Failure Handling ---");
+        AppLogger appLogger = AppLogger.getLogger(SampleApplication.class);
+        
+        try {
+            // Simulating a runtime failure (e.g. Database constraint or NullPointer failure during processing)
+            throw new RuntimeException("Database Timeout: Failed to persist student record");
+        } catch (RuntimeException e) {
+            // 5a. Log standard exception with full stack trace via AppLogger
+            System.out.println("Logging error stack trace using AppLogger:");
+            appLogger.error("Unhandled runtime exception encountered during transaction", e);
+
+            // 5b. Log audit trail failure event
+            System.out.println("\nLogging Audit Failure record:");
+            AuditLogger.builder()
+                    .action(AuditConstants.ACTION_UPDATE)
+                    .entity("STUDENT_RECORD", "rec-9999")
+                    .failure(e.getMessage())
+                    .detail("exceptionClass", e.getClass().getName())
+                    .executionTime(120)
+                    .log();
+
+            // 5c. Formulate standard error response
+            ApiResponse<Void> errorResponse = ApiResponse.error("ERR_DATABASE_TIMEOUT", e.getMessage());
+            System.out.println("\nFormulated Error Response payload: " + errorResponse);
+        }
 
         // Simulating end of request: Clean up thread local context
         AuditContextHolder.clear();
