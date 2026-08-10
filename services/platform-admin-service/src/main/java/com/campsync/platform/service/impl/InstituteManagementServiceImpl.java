@@ -2,6 +2,9 @@ package com.campsync.platform.service.impl;
 
 import com.campsync.platform.dto.InstituteDtos.*;
 import com.campsync.platform.service.InstituteManagementService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,6 +17,8 @@ import java.util.stream.Collectors;
 @Service
 public class InstituteManagementServiceImpl implements InstituteManagementService {
 
+    private static final AppLogger log = AppLogger.getLogger(InstituteManagementServiceImpl.class);
+
     private final Map<String, InstituteRecord> instituteStore = new ConcurrentHashMap<>();
     private final Set<String> registeredSubdomains = Collections.synchronizedSet(new HashSet<>());
     private final List<String> publishedEvents = Collections.synchronizedList(new ArrayList<>());
@@ -25,11 +30,14 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
         );
         instituteStore.put(sample.getId(), sample);
         registeredSubdomains.add("oxford");
+        log.info("Initialized InstituteManagementServiceImpl with sample institute inst-101");
     }
 
     @Override
     public InstituteResponse provisionInstitute(ProvisionInstituteRequest request) {
+        log.info("Request received to provision institute: name={}, subdomain={}", request.getName(), request.getSubdomain());
         if (registeredSubdomains.contains(request.getSubdomain().toLowerCase())) {
+            log.warn("Provisioning rejected due to duplicate subdomain: {}", request.getSubdomain());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Subdomain '" + request.getSubdomain() + "' is already in use.");
         }
 
@@ -44,6 +52,16 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
         registeredSubdomains.add(request.getSubdomain().toLowerCase());
         instituteStore.put(id, record);
         publishedEvents.add("InstituteOnboarded:" + id);
+
+        log.info("Successfully provisioned institute id={} with status=onboarding", id);
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_CREATE)
+                .entity("INSTITUTE", id)
+                .success()
+                .message("Institute provisioned successfully")
+                .detail("subdomain", request.getSubdomain())
+                .detail("planId", request.getPlanId())
+                .log();
 
         return mapToResponse(record);
     }

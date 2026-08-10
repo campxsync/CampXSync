@@ -2,6 +2,9 @@ package com.campsync.college.service.impl;
 
 import com.campsync.college.dto.CollegeIdentityDtos.*;
 import com.campsync.college.service.CollegeIdentityService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,6 +17,8 @@ import java.util.stream.Collectors;
 @Service
 public class CollegeIdentityServiceImpl implements CollegeIdentityService {
 
+    private static final AppLogger log = AppLogger.getLogger(CollegeIdentityServiceImpl.class);
+
     private final Map<String, UserRecord> userStore = new ConcurrentHashMap<>();
 
     public CollegeIdentityServiceImpl() {
@@ -23,10 +28,12 @@ public class CollegeIdentityServiceImpl implements CollegeIdentityService {
             "usr-101", "inst-101", "faculty", "Prof. Alan Turing", "turing@oxford.edu", "active", prof, Instant.now(), Instant.now()
         );
         userStore.put(defaultUser.getId(), defaultUser);
+        log.info("Initialized CollegeIdentityServiceImpl with default user usr-101");
     }
 
     @Override
     public UserResponse createUser(String institutionId, CreateUserRequest request) {
+        log.info("Request to create user for institutionId: {}, name={}, profileType={}", institutionId, request.getName(), request.getProfileType());
         String id = "usr-" + UUID.randomUUID().toString().substring(0, 8);
         Instant now = Instant.now();
         Map<String, Object> prof = request.getProfile() != null ? request.getProfile() : Collections.emptyMap();
@@ -36,6 +43,17 @@ public class CollegeIdentityServiceImpl implements CollegeIdentityService {
         );
 
         userStore.put(id, record);
+        log.info("Successfully created user id={} for institutionId={}", id, institutionId);
+
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_CREATE)
+                .entity("USER_PROFILE", id)
+                .success()
+                .message("College user record created")
+                .detail("profileType", request.getProfileType())
+                .detail("institutionId", institutionId)
+                .log();
+
         return mapToResponse(record);
     }
 

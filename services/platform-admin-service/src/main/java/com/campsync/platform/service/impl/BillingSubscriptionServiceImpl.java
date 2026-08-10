@@ -2,6 +2,9 @@ package com.campsync.platform.service.impl;
 
 import com.campsync.platform.dto.BillingSubscriptionDtos.*;
 import com.campsync.platform.service.BillingSubscriptionService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,6 +18,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class BillingSubscriptionServiceImpl implements BillingSubscriptionService {
 
+    private static final AppLogger log = AppLogger.getLogger(BillingSubscriptionServiceImpl.class);
+
     private final Map<String, AccountEntry> accountStore = new ConcurrentHashMap<>();
 
     public BillingSubscriptionServiceImpl() {
@@ -25,6 +30,7 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
 
     @Override
     public BillingAccountResponse getBillingAccount(String institutionId) {
+        log.debug("Fetching billing account for institutionId: {}", institutionId);
         AccountEntry account = accountStore.computeIfAbsent(institutionId, id -> new AccountEntry(
             "bill-" + UUID.randomUUID().toString().substring(0, 8),
             id, "plan-starter", "ACTIVE", BigDecimal.ZERO, Instant.now(), new CopyOnWriteArrayList<>()
@@ -34,6 +40,7 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
 
     @Override
     public BillingAccountResponse changePlan(String institutionId, ChangePlanRequest request) {
+        log.info("Request to change plan for institutionId: {} to {}", institutionId, request.getNewPlanId());
         AccountEntry account = accountStore.get(institutionId);
         if (account == null) {
             account = accountStore.computeIfAbsent(institutionId, id -> new AccountEntry(
@@ -43,10 +50,17 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
         }
 
         if ("plan-invalid".equalsIgnoreCase(request.getNewPlanId())) {
+            log.error("Settlement failed during plan change for institutionId: {}. Reverting plan.", institutionId);
             accountStore.put(institutionId, new AccountEntry(
                 account.getId(), account.getInstitutionId(), account.getPlanId(), "PAYMENT_FAILED",
                 account.getBalance(), account.getCreatedAt(), account.getInvoices()
             ));
+            AuditLogger.builder()
+                    .action(AuditConstants.ACTION_UPDATE)
+                    .entity("BILLING_ACCOUNT", institutionId)
+                    .failure("Settlement failed during plan change")
+                    .detail("targetPlanId", request.getNewPlanId())
+                    .log();
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
                 "Settlement failed for plan change to '" + request.getNewPlanId() + "'. Account reverted to '" + account.getPlanId() + "'.");
         }
@@ -59,6 +73,15 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
             account.getBalance(), account.getCreatedAt(), account.getInvoices()
         );
         accountStore.put(institutionId, updated);
+
+        log.info("Successfully updated plan for institutionId: {} to {}", institutionId, request.getNewPlanId());
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_UPDATE)
+                .entity("BILLING_ACCOUNT", institutionId)
+                .success()
+                .message("Subscription plan updated")
+                .detail("newPlanId", request.getNewPlanId())
+                .log();
 
         return mapToResponse(updated);
     }
