@@ -1,0 +1,44 @@
+# Target & Build Directories
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE & Editor Settings
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.swp
+*.swo
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Log Files
+*.log
+logs/
+**/logs/
+
+# Python Cache & Virtual Envs
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Node & Frontend
+node_modules/
+dist/
+.next/
+
+# Local Environment & Secrets
+.env
+.env.local
+*.pem
+*.key

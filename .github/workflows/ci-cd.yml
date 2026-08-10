@@ -1,0 +1,37 @@
+name: CampXSync CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "devbranch1.0", "develop" ]
+  pull_request:
+    branches: [ "main", "devbranch1.0" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test Microservices
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Multi-Module Project & Run Tests
+        run: mvn clean test -B
+
+      - name: Package Applications
+        run: mvn package -DskipTests -B
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-artifacts
+          path: |
+            **/target/*.jar
+            !**/target/*-sources.jar

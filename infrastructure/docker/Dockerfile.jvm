@@ -1,0 +1,33 @@
+# Multi-stage Dockerfile for Java Microservices
+FROM maven:3.8.6-openjdk-8-slim AS builder
+WORKDIR /workspace
+
+# Copy parent POM and all child module descriptors
+COPY pom.xml .
+COPY logger/pom.xml logger/
+COPY api-gateway/pom.xml api-gateway/
+COPY services/college-admin-service/pom.xml services/college-admin-service/
+COPY services/platform-admin-service/pom.xml services/platform-admin-service/
+
+# Download dependencies offline
+RUN mvn dependency:go-offline -B || true
+
+# Copy source code
+COPY logger/src logger/src
+COPY api-gateway/src api-gateway/src
+COPY services/college-admin-service/src services/college-admin-service/src
+COPY services/platform-admin-service/src services/platform-admin-service/src
+
+# Build packages
+RUN mvn clean package -DskipTests
+
+# Runtime stage
+FROM openjdk:8-jre-alpine
+ARG MODULE_PATH
+ARG JAR_FILE
+
+WORKDIR /app
+COPY --from=builder /workspace/${MODULE_PATH}/target/${JAR_FILE} app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

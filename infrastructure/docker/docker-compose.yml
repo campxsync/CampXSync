@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # MongoDB Datastore
+  mongodb:
+    image: mongo:6.0
+    container_name: campxsync-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: campxsync
+    volumes:
+      - mongo-data:/data/db
+
+  # Redis Cache & Rate Limiting Engine
+  redis:
+    image: redis:7.0-alpine
+    container_name: campxsync-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.jvm
+      args:
+        MODULE_PATH: api-gateway
+        JAR_FILE: api-gateway-1.0.0-SNAPSHOT.jar
+    container_name: campxsync-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongodb:27017/campxsync
+    depends_on:
+      - redis
+      - mongodb
+
+  # College Admin Microservice
+  college-admin-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.jvm
+      args:
+        MODULE_PATH: services/college-admin-service
+        JAR_FILE: college-admin-service-1.0.0-SNAPSHOT.jar
+    container_name: campxsync-college-admin-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MONGO_URI=mongodb://mongodb:27017/campxsync
+    depends_on:
+      - mongodb
+
+  # Platform Admin Microservice
+  platform-admin-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.jvm
+      args:
+        MODULE_PATH: services/platform-admin-service
+        JAR_FILE: platform-admin-service-1.0.0-SNAPSHOT.jar
+    container_name: campxsync-platform-admin-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MONGO_URI=mongodb://mongodb:27017/campxsync
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo-data:
