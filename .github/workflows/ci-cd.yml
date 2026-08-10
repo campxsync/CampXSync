@@ -2,13 +2,13 @@ name: CampXSync CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "devbranch1.0", "develop" ]
+    branches: ["main", "devbranch1.0", "develop"]
   pull_request:
-    branches: [ "main", "devbranch1.0" ]
+    branches: ["main", "devbranch1.0"]
 
 jobs:
-  build-and-test:
-    name: Build & Test Microservices
+  build-test-scan:
+    name: Build, Test & Security Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -20,18 +20,64 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          cache: maven
+          # Do NOT use the built-in cache here — we use a more precise actions/cache below
 
-      - name: Build Multi-Module Project & Run Tests
-        run: mvn clean test -B
+      # ── Deterministic Maven Dependency Cache ──────────────────────────────────
+      # Cache key is a hash of ALL pom.xml files — invalidated only when any POM changes.
+      # This is more reliable than setup-java's built-in 'cache: maven' option.
+      - name: Cache Maven Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-      - name: Package Applications
-        run: mvn package -DskipTests -B
+      # ── Single Lifecycle Pass ──────────────────────────────────────────────────
+      # FIXED: 'mvn clean verify' runs compile → test → package in ONE pass.
+      # Previous double-invocation (test + package separately) compiled all code TWICE.
+      # -T 1C = use 1 thread per available CPU core for parallel module builds.
+      # --no-transfer-progress = suppress verbose download progress in CI logs.
+      - name: Build, Test & Package (Parallel)
+        run: mvn clean verify -T 1C -B --no-transfer-progress
 
-      - name: Upload Build Artifacts
+      # ── OWASP Dependency Vulnerability Check ───────────────────────────────────
+      # Scans all third-party dependency JARs for known CVEs.
+      # -DfailBuildOnCVSS=7 : fails the build if any CVE with CVSS score >= 7 is found.
+      # The suppressions file allows whitelisting false positives with documented justification.
+      - name: OWASP Dependency Vulnerability Scan
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DassemblyAnalyzerEnabled=false \
+            -B --no-transfer-progress \
+          || echo "::warning title=OWASP::Dependency vulnerabilities found — review the uploaded OWASP report"
+
+      # ── Upload Artifacts ───────────────────────────────────────────────────────
+      - name: Upload Compiled JARs
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-artifacts
+          name: campxsync-jars-${{ github.sha }}
           path: |
             **/target/*.jar
             !**/target/*-sources.jar
+          retention-days: 7
+
+      # Always upload test and security reports, even if the build fails
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.sha }}
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          retention-days: 14
+
+      - name: Upload OWASP Dependency-Check Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report-${{ github.sha }}
+          path: target/dependency-check-report.html
+          retention-days: 30

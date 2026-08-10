@@ -1,33 +1,83 @@
-# Multi-stage Dockerfile for Java Microservices
+# syntax=docker/dockerfile:1
+# =============================================================================
+# CampXSync Multi-Stage Dockerfile — Java Microservices
+#
+# Build arguments (required):
+#   MODULE_PATH  — module directory relative to repo root (e.g. api-gateway)
+#   JAR_FILE     — final JAR filename (e.g. api-gateway-1.0.0-SNAPSHOT.jar)
+#
+# Build with BuildKit for layer caching of Maven dependencies:
+#   DOCKER_BUILDKIT=1 docker build \
+#     --build-arg MODULE_PATH=api-gateway \
+#     --build-arg JAR_FILE=api-gateway-1.0.0-SNAPSHOT.jar \
+#     -f infrastructure/docker/Dockerfile.jvm \
+#     -t campxsync/api-gateway:1.0.0 .
+# =============================================================================
+
+# ─── Stage 1: Build ───────────────────────────────────────────────────────────
 FROM maven:3.8.6-openjdk-8-slim AS builder
+
+ARG MODULE_PATH
+ARG JAR_FILE
+
 WORKDIR /workspace
 
-# Copy parent POM and all child module descriptors
+# ── Dependency pre-fetch (separate layer from source for better cache hits) ──
+# Copy only POM files first. This layer is only invalidated when POMs change,
+# NOT when source code changes — dramatically speeds up iterative builds.
 COPY pom.xml .
 COPY logger/pom.xml logger/
 COPY api-gateway/pom.xml api-gateway/
 COPY services/college-admin-service/pom.xml services/college-admin-service/
 COPY services/platform-admin-service/pom.xml services/platform-admin-service/
 
-# Download dependencies offline
-RUN mvn dependency:go-offline -B || true
+# Download dependencies using BuildKit cache mount so the ~/.m2 cache is
+# reused across builds WITHOUT being stored in the image layer.
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B -q
 
-# Copy source code
+# ── Source copy — only the modules needed for this build ────────────────────
+# Logger is always needed as it is an upstream dependency of every service.
 COPY logger/src logger/src
-COPY api-gateway/src api-gateway/src
-COPY services/college-admin-service/src services/college-admin-service/src
-COPY services/platform-admin-service/src services/platform-admin-service/src
+COPY ${MODULE_PATH}/src ${MODULE_PATH}/src
 
-# Build packages
-RUN mvn clean package -DskipTests
+# ── Selective module build ──────────────────────────────────────────────────
+# -pl ${MODULE_PATH}  : build only the target module
+# -am                 : --also-make: build upstream dependencies (logger)
+# This prevents building ALL 4 modules for every single service image.
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -pl ${MODULE_PATH} -am -DskipTests -B -q
 
-# Runtime stage
-FROM openjdk:8-jre-alpine
+# ─── Stage 2: Runtime ────────────────────────────────────────────────────────
+# eclipse-temurin is the actively-maintained successor to openjdk Docker images.
+# openjdk:8-jre-alpine was deprecated and removed from Docker Hub.
+FROM eclipse-temurin:8-jre-alpine AS runtime
+
 ARG MODULE_PATH
 ARG JAR_FILE
 
+# Security: never run as root inside a container
+# Create a dedicated non-root system user and group
+RUN addgroup -S campxsync && adduser -S campxsync -G campxsync
+
 WORKDIR /app
+
+# Copy only the built JAR from the builder stage — no source or Maven cache
 COPY --from=builder /workspace/${MODULE_PATH}/target/${JAR_FILE} app.jar
 
+# Transfer ownership to the non-root user
+RUN chown campxsync:campxsync app.jar
+
+USER campxsync
+
+# JVM tuning flags:
+#   -XX:+UseContainerSupport   : respect cgroup memory/CPU limits (critical in K8s)
+#   -XX:MaxRAMPercentage=75.0  : use up to 75% of container memory for heap
+#   -Djava.security.egd        : faster SecureRandom seeding (avoids /dev/random blocking)
+ENTRYPOINT ["java", \
+  "-Djava.security.egd=file:/dev/./urandom", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-jar", "app.jar"]
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

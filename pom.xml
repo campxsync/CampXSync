@@ -4,6 +4,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+        Extends spring-boot-starter-parent to inherit:
+          - maven-compiler-plugin configuration (source/target from java.version)
+          - spring-boot-maven-plugin repackage execution binding
+          - Resource filtering for application.properties/@placeholder@ style
+          - spring-boot-dependencies BOM (all Spring dependency versions managed)
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.campxsync</groupId>
     <artifactId>campxsync-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
@@ -20,35 +34,36 @@
     </modules>
 
     <properties>
+        <!-- spring-boot-starter-parent uses java.version for compiler source/target -->
         <java.version>1.8</java.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <spring-boot.version>2.7.18</spring-boot.version>
+        <!-- Third-party dependency versions not managed by Spring Boot BOM -->
         <springdoc.version>1.7.0</springdoc.version>
-        <logger.version>1.0.0</logger.version>
+
+        <!--
+            Internal shared library version — aligned to this parent's SNAPSHOT version.
+            Child modules reference this via dependencyManagement; no hardcoding in child POMs.
+        -->
+        <logger.version>1.0.0-SNAPSHOT</logger.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Boot Dependencies BOM -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!--
+                NOTE: spring-boot-dependencies BOM is NOT re-imported here because it is
+                already transitively provided by extending spring-boot-starter-parent.
+                Adding it again would cause duplicate import warnings.
+            -->
 
-            <!-- SpringDoc OpenAPI -->
+            <!-- SpringDoc OpenAPI — not in Spring Boot BOM, managed centrally here -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-ui</artifactId>
                 <version>${springdoc.version}</version>
             </dependency>
 
-            <!-- Internal Shared Logger Library -->
+            <!-- Internal Shared Logger Library — version resolved from ${logger.version} property -->
             <dependency>
                 <groupId>com.campxsync</groupId>
                 <artifactId>logger</artifactId>
@@ -60,21 +75,32 @@
     <build>
         <pluginManagement>
             <plugins>
+                <!--
+                    spring-boot-maven-plugin: spring-boot-starter-parent already binds the
+                    'repackage' goal to the 'package' lifecycle phase for modules that declare
+                    this plugin. Configuring it here in pluginManagement ensures consistent
+                    configuration (e.g. excluding devtools) across all service modules.
+                    NOTE: The logger module must NOT declare this plugin — it is a plain library.
+                -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
                     <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
-                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <!-- Exclude spring-boot-devtools from the repackaged fat JAR -->
+                        <excludes>
+                            <exclude>
+                                <groupId>org.springframework.boot</groupId>
+                                <artifactId>spring-boot-devtools</artifactId>
+                            </exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
+
+                <!--
+                    maven-surefire-plugin 2.22.2+ is required for JUnit 5 (Jupiter) support.
+                    spring-boot-starter-parent manages surefire, but we explicitly override
+                    the version here to guarantee JUnit 5 compatibility in all modules.
+                -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>

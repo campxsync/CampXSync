@@ -30,13 +30,13 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
-            <version>${springdoc.version}</version>
+            <!-- version resolved from campxsync-parent dependencyManagement -->
         </dependency>
 
+        <!-- Shared Logger — version resolved from campxsync-parent dependencyManagement -->
         <dependency>
             <groupId>com.campxsync</groupId>
             <artifactId>logger</artifactId>
-            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

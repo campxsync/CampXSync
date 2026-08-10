@@ -1,0 +1,63 @@
+# ── Build Artifacts ────────────────────────────────────────────────────────────
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ── Version Control ────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── CI/CD & Agent Config ───────────────────────────────────────────────────────
+.github/
+.agents/
+
+# ── IDE & Editor Settings ──────────────────────────────────────────────────────
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.swp
+*.swo
+
+# ── OS Generated Files ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Documentation & Scripts ────────────────────────────────────────────────────
+# Excluded from Docker image build context — not needed in container
+docs/
+scripts/
+*.md
+*.docx
+*.pdf
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+logs/
+**/logs/
+
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# ── Node & Frontend ────────────────────────────────────────────────────────────
+node_modules/
+dist/
+.next/
+frontend-web/
+
+# ── Secrets ────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.docker.example
+*.pem
+*.key

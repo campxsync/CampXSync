@@ -1,5 +1,0 @@
-com\campxsync\gateway\config\SecurityConfig.class
-com\campxsync\gateway\ApiGatewayApplication.class
-com\campxsync\gateway\filter\JwtAuthenticationFilter.class
-com\campxsync\gateway\controller\GatewayProxyController.class
-com\campxsync\gateway\filter\RequestLoggingFilter.class

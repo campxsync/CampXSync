@@ -34,11 +34,10 @@
             <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- Shared CampXSync Logger Library -->
+        <!-- Shared CampXSync Logger Library — version resolved from campxsync-parent dependencyManagement -->
         <dependency>
             <groupId>com.campxsync</groupId>
             <artifactId>logger</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
         <!-- Spring Boot Test -->
