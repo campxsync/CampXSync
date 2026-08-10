@@ -129,10 +129,23 @@ public class SampleApplication {
             System.out.println("\nFormulated Error Response payload: " + errorResponse);
         }
 
+        // 6. Automated AOP Method Tracing Demo (@LogExecution)
+        System.out.println("\n--- 6. Automated AOP Method Tracing Demo (@LogExecution) ---");
+        SampleService sampleService = new SampleService();
+        sampleService.calculateGrade("usr-789", 94.5);
+
         // Simulating end of request: Clean up thread local context
         AuditContextHolder.clear();
         System.out.println("\nContext cleared.");
         System.out.println();
         System.out.println("=== Demo Finished Successfully ===");
+    }
+
+    @logger.annotation.LogExecution
+    static class SampleService {
+        public String calculateGrade(String studentId, double score) {
+            System.out.println("Executing business logic inside calculateGrade for " + studentId + " with score " + score);
+            return score >= 90 ? "A+" : "B";
+        }
     }
 }
