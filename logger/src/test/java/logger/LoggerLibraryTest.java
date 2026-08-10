@@ -254,4 +254,17 @@ public class LoggerLibraryTest {
         assertEquals("JSON", logger.config.LibraryConfig.getLogFormat());
         System.clearProperty("campxsync.logger.format");
     }
+
+    @Test
+    public void testLogExecutionAnnotation() {
+        logger.annotation.LogExecution annotation = DummyClass.class.getAnnotation(logger.annotation.LogExecution.class);
+        assertNotNull(annotation);
+        assertTrue(annotation.logArguments());
+        assertTrue(annotation.logResult());
+    }
+
+    @logger.annotation.LogExecution
+    private static class DummyClass {
+        public void dummyMethod() {}
+    }
 }

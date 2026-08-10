@@ -1,0 +1,1 @@
+[2026-08-10T11:14:15.781Z] AUDIT [Trace: 93ffcfc8776a43a9962b2c889333f648] [Actor: SYSTEM_ACTOR] [IP: UNKNOWN_SOURCE] Action: CREATE | Entity: USER_PROFILE (usr-1fa364ea) | Status: SUCCESS | Msg: College user record created | Details: {profileType=student, institutionId=inst-101}
