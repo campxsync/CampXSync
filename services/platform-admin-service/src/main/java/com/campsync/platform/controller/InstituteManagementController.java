@@ -2,6 +2,7 @@ package com.campsync.platform.controller;
 
 import com.campsync.platform.dto.InstituteDtos.*;
 import com.campsync.platform.service.InstituteManagementService;
+import logger.logging.AppLogger;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Institute Management", description = "Provisioning, lifecycle management, and institute profile administration")
 public class InstituteManagementController {
 
+    private static final AppLogger log = AppLogger.getLogger(InstituteManagementController.class);
+
     private final InstituteManagementService instituteService;
 
     public InstituteManagementController(InstituteManagementService instituteService) {
@@ -23,6 +26,7 @@ public class InstituteManagementController {
     @PostMapping
     @Operation(summary = "Provision a new institute", description = "Onboards a new institute with unique subdomain, plan, and initial onboarding state")
     public ResponseEntity<InstituteResponse> provisionInstitute(@Valid @RequestBody ProvisionInstituteRequest request) {
+        log.info("REST POST /v1/institutes - Provisioning institute subdomain={}", request.getSubdomain());
         InstituteResponse response = instituteService.provisionInstitute(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

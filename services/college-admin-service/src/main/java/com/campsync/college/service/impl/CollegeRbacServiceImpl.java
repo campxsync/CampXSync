@@ -2,6 +2,9 @@ package com.campsync.college.service.impl;
 
 import com.campsync.college.dto.CollegeRbacDtos.*;
 import com.campsync.college.service.CollegeRbacService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -13,6 +16,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CollegeRbacServiceImpl implements CollegeRbacService {
+
+    private static final AppLogger log = AppLogger.getLogger(CollegeRbacServiceImpl.class);
 
     private final Map<String, RoleEntry> roleStore = new ConcurrentHashMap<>();
     private final Map<String, AssignmentEntry> assignmentStore = new ConcurrentHashMap<>();
@@ -32,13 +37,16 @@ public class CollegeRbacServiceImpl implements CollegeRbacService {
             defaultAdminPermissions, Instant.now()
         );
         roleStore.put(adminRole.getId(), adminRole);
+        log.info("Initialized CollegeRbacServiceImpl with default tenant role-college-admin");
     }
 
     @Override
     public CollegeRoleResponse createRole(String institutionId, CreateCustomRoleRequest request) {
+        log.info("Creating custom tenant role for institutionId: {}, name={}", institutionId, request.getName());
         // Validate against global permission catalog (Story 23)
         for (String perm : request.getPermissions()) {
             if (!globalPermissionCatalog.contains(perm)) {
+                log.warn("Permission validation failed for role '{}': permission '{}' not in global catalog", request.getName(), perm);
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Permission '" + perm + "' is invalid and does not exist in the global catalog.");
             }
         }
@@ -46,6 +54,16 @@ public class CollegeRbacServiceImpl implements CollegeRbacService {
         String id = "role-" + UUID.randomUUID().toString().substring(0, 8);
         RoleEntry role = new RoleEntry(id, institutionId, request.getName(), request.getDescription(), request.getPermissions(), Instant.now());
         roleStore.put(id, role);
+
+        log.info("Successfully created custom role id={} for institutionId={}", id, institutionId);
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_CREATE)
+                .entity("COLLEGE_ROLE", id)
+                .success()
+                .message("Tenant custom role created")
+                .detail("roleName", request.getName())
+                .detail("institutionId", institutionId)
+                .log();
 
         return new CollegeRoleResponse(role.getId(), role.getInstitutionId(), role.getName(), role.getDescription(), role.getPermissions(), role.getCreatedAt());
     }

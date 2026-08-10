@@ -2,6 +2,9 @@ package com.campsync.college.service.impl;
 
 import com.campsync.college.dto.CollegeConfigDtos.*;
 import com.campsync.college.service.CollegeConfigService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,6 +18,8 @@ import java.util.stream.Collectors;
 @Service
 public class CollegeConfigServiceImpl implements CollegeConfigService {
 
+    private static final AppLogger log = AppLogger.getLogger(CollegeConfigServiceImpl.class);
+
     private final Map<String, ConfigEntry> configStore = new ConcurrentHashMap<>();
     private final List<ConfigAuditHistoryResponse> auditHistory = new CopyOnWriteArrayList<>();
 
@@ -22,6 +27,7 @@ public class CollegeConfigServiceImpl implements CollegeConfigService {
         initConfig("inst-101", "theme_color", "#003366", "branding");
         initConfig("inst-101", "attendance_module_enabled", true, "feature_flag");
         initConfig("inst-101", "academic_year", "2026-2027", "operational");
+        log.info("Initialized CollegeConfigServiceImpl with seed configuration settings");
     }
 
     private void initConfig(String instId, String key, Object value, String category) {
@@ -31,6 +37,7 @@ public class CollegeConfigServiceImpl implements CollegeConfigService {
 
     @Override
     public List<CollegeConfigResponse> getInstitutionConfigs(String institutionId) {
+        log.debug("Fetching college configs for institutionId: {}", institutionId);
         return configStore.values().stream()
             .filter(c -> c.getInstitutionId().equalsIgnoreCase(institutionId))
             .map(c -> new CollegeConfigResponse(c.getKey(), c.getValue(), c.getCategory(), c.getInstitutionId(), c.getUpdatedAt(), c.getUpdatedBy()))
@@ -39,6 +46,7 @@ public class CollegeConfigServiceImpl implements CollegeConfigService {
 
     @Override
     public CollegeConfigResponse updateConfig(String institutionId, String key, Object value, String actor) {
+        log.info("Updating college config key='{}' for institutionId='{}' to value='{}' by actor='{}'", key, institutionId, value, actor);
         String storeKey = institutionId + ":" + key;
         ConfigEntry existing = configStore.get(storeKey);
         if (existing == null) {
@@ -51,6 +59,17 @@ public class CollegeConfigServiceImpl implements CollegeConfigService {
         configStore.put(storeKey, updated);
 
         auditHistory.add(new ConfigAuditHistoryResponse(key, previousValue, value, institutionId, actor, Instant.now()));
+
+        log.info("Successfully updated config key='{}' for institutionId='{}'", key, institutionId);
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_UPDATE)
+                .entity("COLLEGE_CONFIG", storeKey)
+                .success()
+                .message("College configuration updated")
+                .detail("key", key)
+                .detail("newValue", value)
+                .detail("institutionId", institutionId)
+                .log();
 
         return new CollegeConfigResponse(updated.getKey(), updated.getValue(), updated.getCategory(), updated.getInstitutionId(), updated.getUpdatedAt(), updated.getUpdatedBy());
     }

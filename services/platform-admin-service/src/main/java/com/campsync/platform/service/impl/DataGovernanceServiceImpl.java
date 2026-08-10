@@ -2,6 +2,9 @@ package com.campsync.platform.service.impl;
 
 import com.campsync.platform.dto.DataGovernanceDtos.*;
 import com.campsync.platform.service.DataGovernanceService;
+import logger.constants.AuditConstants;
+import logger.logging.AppLogger;
+import logger.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,6 +17,8 @@ import java.util.stream.Collectors;
 @Service
 public class DataGovernanceServiceImpl implements DataGovernanceService {
 
+    private static final AppLogger log = AppLogger.getLogger(DataGovernanceServiceImpl.class);
+
     private final Map<String, PolicyEntry> policyStore = new ConcurrentHashMap<>();
 
     public DataGovernanceServiceImpl() {
@@ -25,10 +30,12 @@ public class DataGovernanceServiceImpl implements DataGovernanceService {
             defaultId, "GDPR 7-Year Student Data Retention", "retention", "all",
             ruleMap, "ACTIVE", Instant.now(), Instant.now()
         ));
+        log.info("Initialized DataGovernanceServiceImpl with default retention policy pol-101");
     }
 
     @Override
     public PolicyResponse createPolicy(CreatePolicyRequest request) {
+        log.info("Creating policy name='{}', type='{}', appliesTo='{}'", request.getName(), request.getType(), request.getAppliesTo());
         String id = "pol-" + UUID.randomUUID().toString().substring(0, 8);
         Instant now = Instant.now();
 
@@ -38,6 +45,17 @@ public class DataGovernanceServiceImpl implements DataGovernanceService {
         );
 
         policyStore.put(id, entry);
+        log.info("Successfully created policy id='{}'", id);
+
+        AuditLogger.builder()
+                .action(AuditConstants.ACTION_CREATE)
+                .entity("GOVERNANCE_POLICY", id)
+                .success()
+                .message("Data governance policy created")
+                .detail("policyName", request.getName())
+                .detail("policyType", request.getType())
+                .log();
+
         return mapToResponse(entry);
     }
 

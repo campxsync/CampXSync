@@ -2,6 +2,7 @@ package com.campsync.college.service.impl;
 
 import com.campsync.college.dto.CollegeAuditDtos.*;
 import com.campsync.college.service.CollegeAuditService;
+import logger.logging.AppLogger;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -10,6 +11,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CollegeAuditServiceImpl implements CollegeAuditService {
+
+    private static final AppLogger log = AppLogger.getLogger(CollegeAuditServiceImpl.class);
 
     private final List<CollegeAuditLogResponse> tenantAuditLogs = new ArrayList<>();
 
@@ -32,6 +35,7 @@ public class CollegeAuditServiceImpl implements CollegeAuditService {
 
     @Override
     public PaginatedCollegeAuditLogsResponse queryAuditLogs(String institutionId, String eventType, String sourceModule, int page, int size) {
+        log.debug("Querying college audit logs for institutionId: {}, eventType: {}, sourceModule: {}", institutionId, eventType, sourceModule);
         // Story 33: Implicitly scoped strictly to caller's institutionId
         List<CollegeAuditLogResponse> filtered = tenantAuditLogs.stream()
             .filter(l -> l.getInstitutionId().equalsIgnoreCase(institutionId))
