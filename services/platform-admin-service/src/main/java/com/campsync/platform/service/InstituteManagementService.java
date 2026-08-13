@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.InstituteDtos.*;
+import com.campxsync.platform.dto.InstituteDtos.*;
 
 public interface InstituteManagementService {
     InstituteResponse provisionInstitute(ProvisionInstituteRequest request);

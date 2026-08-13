@@ -22,7 +22,15 @@ public class ApiGatewayApplicationTests {
     @Autowired
     private MockMvc mockMvc;
 
-    private final JwtProvider jwtProvider = new JwtProvider("super_secret_signing_key_for_campxsync_platform_2026", "campxsync");
+    @org.springframework.beans.factory.annotation.Value("${gateway.jwt.secret}")
+    private String secret;
+
+    private JwtProvider jwtProvider;
+
+    @org.junit.jupiter.api.BeforeEach
+    public void setUp() {
+        this.jwtProvider = new JwtProvider(secret, "campxsync");
+    }
 
     @Test
     @DisplayName("Test 01: Gateway Health Actuator Endpoint Check")

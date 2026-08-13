@@ -1,4 +1,4 @@
-package com.campsync.college.dto;
+package com.campxsync.college.dto;
 
 import java.time.Instant;
 import java.util.List;

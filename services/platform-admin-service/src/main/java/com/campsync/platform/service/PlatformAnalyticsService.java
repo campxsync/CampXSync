@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.PlatformAnalyticsDtos.*;
+import com.campxsync.platform.dto.PlatformAnalyticsDtos.*;
 
 public interface PlatformAnalyticsService {
     AnalyticsSnapshotResponse getLatestSnapshot(String metric, String period);

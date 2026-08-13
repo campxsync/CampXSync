@@ -1,7 +1,7 @@
-package com.campsync.platform.controller;
+package com.campxsync.platform.controller;
 
-import com.campsync.platform.dto.AuditHealthDtos.*;
-import com.campsync.platform.service.AuditHealthService;
+import com.campxsync.platform.dto.AuditHealthDtos.*;
+import com.campxsync.platform.service.AuditHealthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;

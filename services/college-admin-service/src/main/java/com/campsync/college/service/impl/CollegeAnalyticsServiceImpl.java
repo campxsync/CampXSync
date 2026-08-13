@@ -1,7 +1,7 @@
-package com.campsync.college.service.impl;
+package com.campxsync.college.service.impl;
 
-import com.campsync.college.dto.CollegeAnalyticsDtos.*;
-import com.campsync.college.service.CollegeAnalyticsService;
+import com.campxsync.college.dto.CollegeAnalyticsDtos.*;
+import com.campxsync.college.service.CollegeAnalyticsService;
 import logger.logging.AppLogger;
 import org.springframework.stereotype.Service;
 

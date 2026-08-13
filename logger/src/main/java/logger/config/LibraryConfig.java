@@ -63,7 +63,16 @@ public final class LibraryConfig {
     }
 
     public static String getJwtSecret() {
-        return get(KEY_JWT_SECRET, "campxsync_secret_key_needs_to_be_replaced_in_production");
+        String value = get(KEY_JWT_SECRET, null);
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalStateException(
+                "[CampXSync Logger] STARTUP FAILURE: Required secret '" + KEY_JWT_SECRET +
+                "' is not configured. Set the environment variable 'CAMPXSYNC_LOGGER_JWT_SECRET' " +
+                "or the system property '" + KEY_JWT_SECRET + "' before starting the application. " +
+                "Never use a hardcoded default for cryptographic secrets."
+            );
+        }
+        return value;
     }
 
     public static String getJwtIssuer() {
@@ -71,7 +80,16 @@ public final class LibraryConfig {
     }
 
     public static String getEncryptionKey() {
-        return get(KEY_ENCRYPTION_KEY, "campxsync_default_aes_encryption_key_2026");
+        String value = get(KEY_ENCRYPTION_KEY, null);
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalStateException(
+                "[CampXSync Logger] STARTUP FAILURE: Required secret '" + KEY_ENCRYPTION_KEY +
+                "' is not configured. Set the environment variable 'CAMPXSYNC_LOGGER_ENCRYPTION_KEY' " +
+                "or the system property '" + KEY_ENCRYPTION_KEY + "' before starting the application. " +
+                "Never use a hardcoded default for cryptographic secrets."
+            );
+        }
+        return value;
     }
 
     public static String getLogFormat() {

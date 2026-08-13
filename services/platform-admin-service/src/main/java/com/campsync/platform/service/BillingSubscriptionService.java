@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.BillingSubscriptionDtos.*;
+import com.campxsync.platform.dto.BillingSubscriptionDtos.*;
 
 public interface BillingSubscriptionService {
     BillingAccountResponse getBillingAccount(String institutionId);

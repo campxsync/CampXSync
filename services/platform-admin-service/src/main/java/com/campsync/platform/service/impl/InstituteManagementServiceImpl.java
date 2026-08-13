@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.InstituteDtos.*;
-import com.campsync.platform.service.InstituteManagementService;
+import com.campxsync.platform.dto.InstituteDtos.*;
+import com.campxsync.platform.service.InstituteManagementService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import logger.enums.InstituteStatus;
 
 @Service
 public class InstituteManagementServiceImpl implements InstituteManagementService {
@@ -41,7 +42,7 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Subdomain '" + request.getSubdomain() + "' is already in use.");
         }
 
-        String id = "inst-" + UUID.randomUUID().toString().substring(0, 8);
+        String id = "inst-" + UUID.randomUUID().toString().replace("-", "");
         String tenancyTier = request.getTenancyTier() != null ? request.getTenancyTier() : "STANDARD_TENANT";
         Instant now = Instant.now();
 
@@ -86,6 +87,7 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
         int fromIndex = Math.min(page * size, total);
         int toIndex = Math.min(fromIndex + size, total);
         List<InstituteResponse> pageContent = filtered.subList(fromIndex, toIndex).stream()
+            .sorted(java.util.Comparator.comparing(InstituteRecord::getCreatedAt))
             .map(this::mapToResponse)
             .collect(Collectors.toList());
 
@@ -100,28 +102,28 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Institute with ID '" + id + "' not found.");
         }
 
-        String currentStatus = existing.getStatus().toLowerCase();
-        String targetStatus = newStatus.toLowerCase();
-
-        boolean validTransition;
-        if ("onboarding".equals(currentStatus)) {
-            validTransition = "active".equals(targetStatus);
-        } else if ("active".equals(currentStatus)) {
-            validTransition = "suspended".equals(targetStatus) || "offboarded".equals(targetStatus);
-        } else if ("suspended".equals(currentStatus)) {
-            validTransition = "active".equals(targetStatus) || "offboarded".equals(targetStatus);
-        } else {
-            validTransition = false;
+        InstituteStatus currentStatusEnum;
+        try {
+            currentStatusEnum = InstituteStatus.fromApiValue(existing.getStatus());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stored institute has unrecognised status: '" + existing.getStatus() + "'");
         }
 
-        if (!validTransition) {
+        InstituteStatus targetStatusEnum;
+        try {
+            targetStatusEnum = InstituteStatus.fromApiValue(newStatus);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        if (!currentStatusEnum.canTransitionTo(targetStatusEnum)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid lifecycle status transition from '" + currentStatus + "' to '" + targetStatus + "'");
+                "Invalid lifecycle status transition from '" + existing.getStatus() + "' to '" + newStatus + "'");
         }
 
         InstituteRecord updated = new InstituteRecord(
             existing.getId(), existing.getName(), existing.getSubdomain(), existing.getPlanId(),
-            targetStatus, existing.getTenancyTier(), existing.getCreatedAt(), Instant.now()
+            targetStatusEnum.toApiValue(), existing.getTenancyTier(), existing.getCreatedAt(), Instant.now()
         );
 
         instituteStore.put(id, updated);
@@ -129,12 +131,12 @@ public class InstituteManagementServiceImpl implements InstituteManagementServic
         // Story 6 Event Publishing Acceptance Criteria:
         // Publish InstituteSuspended on target=suspended, InstituteOffboarded on target=offboarded,
         // and InstituteStatusChanged on every successful transition regardless of target state.
-        if ("suspended".equals(targetStatus)) {
+        if (targetStatusEnum == InstituteStatus.SUSPENDED) {
             publishedEvents.add("InstituteSuspended:" + id);
-        } else if ("offboarded".equals(targetStatus)) {
+        } else if (targetStatusEnum == InstituteStatus.OFFBOARDED) {
             publishedEvents.add("InstituteOffboarded:" + id);
         }
-        publishedEvents.add("InstituteStatusChanged:" + id + ":" + currentStatus + "->" + targetStatus);
+        publishedEvents.add("InstituteStatusChanged:" + id + ":" + currentStatusEnum.toApiValue() + "->" + targetStatusEnum.toApiValue());
 
         return mapToResponse(updated);
     }

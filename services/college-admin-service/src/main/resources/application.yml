@@ -17,4 +17,4 @@ springdoc:
 logging:
   level:
     root: INFO
-    com.campsync.college: DEBUG
+    com.campxsync.college: DEBUG

@@ -1,7 +1,7 @@
-package com.campsync.platform.controller;
+package com.campxsync.platform.controller;
 
-import com.campsync.platform.dto.PlatformAnalyticsDtos.*;
-import com.campsync.platform.service.PlatformAnalyticsService;
+import com.campxsync.platform.dto.PlatformAnalyticsDtos.*;
+import com.campxsync.platform.service.PlatformAnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;

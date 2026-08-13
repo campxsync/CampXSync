@@ -1,7 +1,7 @@
-package com.campsync.platform.controller;
+package com.campxsync.platform.controller;
 
-import com.campsync.platform.dto.PlatformRbacDtos.*;
-import com.campsync.platform.service.PlatformRbacService;
+import com.campxsync.platform.dto.PlatformRbacDtos.*;
+import com.campxsync.platform.service.PlatformRbacService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;

@@ -1,4 +1,4 @@
-package com.campsync.platform.dto;
+package com.campxsync.platform.dto;
 
 import java.time.Instant;
 import java.util.Map;

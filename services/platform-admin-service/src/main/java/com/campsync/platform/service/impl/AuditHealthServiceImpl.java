@@ -1,17 +1,19 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.AuditHealthDtos.*;
-import com.campsync.platform.service.AuditHealthService;
+import com.campxsync.platform.dto.AuditHealthDtos.*;
+import com.campxsync.platform.service.AuditHealthService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Service
 public class AuditHealthServiceImpl implements AuditHealthService {
 
-    private final List<AuditLogResponse> auditLogs = new ArrayList<>();
+    // CopyOnWriteArrayList used instead of ArrayList for thread-safety under concurrent reads/writes
+    private final List<AuditLogResponse> auditLogs = new CopyOnWriteArrayList<>();
 
     public AuditHealthServiceImpl() {
         Map<String, Object> p1 = new HashMap<>();
@@ -58,29 +60,31 @@ public class AuditHealthServiceImpl implements AuditHealthService {
     public SystemHealthResponse getSystemHealth() {
         Map<String, ServiceHealthDetail> services = new LinkedHashMap<>();
 
-        Map<String, Object> d1 = new HashMap<>(); d1.put("latencyMs", 12);
-        services.put("institute-management-service", new ServiceHealthDetail("Institute Management", "UP", d1));
+        // Self health: report only what this service actually knows
+        Runtime runtime = Runtime.getRuntime();
+        long usedMemoryMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+        long maxMemoryMb = runtime.maxMemory() / (1024 * 1024);
+        int auditLogCount = auditLogs.size();
 
-        Map<String, Object> d2 = new HashMap<>(); d2.put("cacheHitRate", "99.4%");
-        services.put("platform-config-service", new ServiceHealthDetail("Platform Configuration", "UP", d2));
+        Map<String, Object> selfDetail = new LinkedHashMap<>();
+        selfDetail.put("storedAuditLogCount", auditLogCount);
+        selfDetail.put("usedMemoryMb", usedMemoryMb);
+        selfDetail.put("maxMemoryMb", maxMemoryMb);
+        selfDetail.put("reportedAt", Instant.now().toString());
+        services.put("audit-system-health-service", new ServiceHealthDetail("Audit & System Health", "UP", selfDetail));
 
-        Map<String, Object> d3 = new HashMap<>(); d3.put("redisSessionCache", "CONNECTED");
-        services.put("platform-rbac-service", new ServiceHealthDetail("Platform RBAC", "UP", d3));
-
-        Map<String, Object> d4 = new HashMap<>(); d4.put("activePolicies", 12);
-        services.put("data-governance-service", new ServiceHealthDetail("Data Governance", "UP", d4));
-
-        Map<String, Object> d5 = new HashMap<>(); d5.put("gatewayStatus", "ONLINE");
-        services.put("billing-subscription-service", new ServiceHealthDetail("Billing & Subscription", "UP", d5));
-
-        Map<String, Object> d6 = new HashMap<>(); d6.put("kafkaConsumerState", "STREAMING");
-        services.put("platform-analytics-service", new ServiceHealthDetail("Platform Analytics", "UP", d6));
-
-        Map<String, Object> d7 = new HashMap<>(); d7.put("lastCheckTime", Instant.now().toString());
-        services.put("security-compliance-service", new ServiceHealthDetail("Security & Compliance", "UP", d7));
-
-        Map<String, Object> d8 = new HashMap<>(); d8.put("storageType", "AppendOnlyStorage");
-        services.put("audit-system-health-service", new ServiceHealthDetail("Audit & System Health", "UP", d8));
+        // External dependencies: reported as UNKNOWN — this service has no active connection
+        // to these services and cannot honestly report their status.
+        // TODO: Integrate with Spring Boot Actuator HealthIndicator API to get real dependency health.
+        Map<String, Object> unknownDetail = new LinkedHashMap<>();
+        unknownDetail.put("note", "Health check not yet integrated. Status reflects no real probe.");
+        services.put("institute-management-service", new ServiceHealthDetail("Institute Management", "UNKNOWN", unknownDetail));
+        services.put("platform-config-service", new ServiceHealthDetail("Platform Configuration", "UNKNOWN", unknownDetail));
+        services.put("platform-rbac-service", new ServiceHealthDetail("Platform RBAC", "UNKNOWN", unknownDetail));
+        services.put("data-governance-service", new ServiceHealthDetail("Data Governance", "UNKNOWN", unknownDetail));
+        services.put("billing-subscription-service", new ServiceHealthDetail("Billing & Subscription", "UNKNOWN", unknownDetail));
+        services.put("platform-analytics-service", new ServiceHealthDetail("Platform Analytics", "UNKNOWN", unknownDetail));
+        services.put("security-compliance-service", new ServiceHealthDetail("Security & Compliance", "UNKNOWN", unknownDetail));
 
         return new SystemHealthResponse("UP", Instant.now(), services);
     }

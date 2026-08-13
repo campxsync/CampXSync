@@ -1,4 +1,4 @@
-package com.campsync.platform.dto;
+package com.campxsync.platform.dto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Positive;

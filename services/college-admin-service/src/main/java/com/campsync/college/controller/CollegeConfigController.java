@@ -1,7 +1,7 @@
-package com.campsync.college.controller;
+package com.campxsync.college.controller;
 
-import com.campsync.college.dto.CollegeConfigDtos.*;
-import com.campsync.college.service.CollegeConfigService;
+import com.campxsync.college.dto.CollegeConfigDtos.*;
+import com.campxsync.college.service.CollegeConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;
@@ -24,7 +24,7 @@ public class CollegeConfigController {
     @GetMapping
     @Operation(summary = "View this institution's configuration", description = "Returns active feature flags, branding, and operational settings for the caller's institution")
     public ResponseEntity<List<CollegeConfigResponse>> getInstitutionConfigs(
-            @RequestHeader(name = "X-Institution-Id", defaultValue = "inst-101") String institutionId) {
+            @RequestHeader(name = "X-Institution-Id", required = true) String institutionId) {
         return ResponseEntity.ok(configService.getInstitutionConfigs(institutionId));
     }
 
@@ -33,7 +33,7 @@ public class CollegeConfigController {
     public ResponseEntity<CollegeConfigResponse> updateConfig(
             @PathVariable String key,
             @Valid @RequestBody UpdateCollegeConfigRequest request,
-            @RequestHeader(name = "X-Institution-Id", defaultValue = "inst-101") String institutionId,
+            @RequestHeader(name = "X-Institution-Id", required = true) String institutionId,
             @RequestHeader(name = "X-Actor-Id", defaultValue = "college-admin") String actor) {
         CollegeConfigResponse response = configService.updateConfig(institutionId, key, request.getValue(), actor);
         return ResponseEntity.ok(response);
@@ -42,7 +42,7 @@ public class CollegeConfigController {
     @GetMapping("/history")
     @Operation(summary = "View configuration change history", description = "Returns an ordered audit history of config setting changes for this institution")
     public ResponseEntity<List<ConfigAuditHistoryResponse>> getConfigHistory(
-            @RequestHeader(name = "X-Institution-Id", defaultValue = "inst-101") String institutionId,
+            @RequestHeader(name = "X-Institution-Id", required = true) String institutionId,
             @RequestParam(required = false) String key) {
         return ResponseEntity.ok(configService.getConfigHistory(institutionId, key));
     }

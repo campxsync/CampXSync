@@ -1,7 +1,7 @@
-package com.campsync.college.service.impl;
+package com.campxsync.college.service.impl;
 
-import com.campsync.college.dto.CollegeConfigDtos.*;
-import com.campsync.college.service.CollegeConfigService;
+import com.campxsync.college.dto.CollegeConfigDtos.*;
+import com.campxsync.college.service.CollegeConfigService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;

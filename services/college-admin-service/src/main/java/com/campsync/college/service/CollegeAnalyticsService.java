@@ -1,6 +1,6 @@
-package com.campsync.college.service;
+package com.campxsync.college.service;
 
-import com.campsync.college.dto.CollegeAnalyticsDtos.*;
+import com.campxsync.college.dto.CollegeAnalyticsDtos.*;
 
 public interface CollegeAnalyticsService {
     CollegeAnalyticsDashboardResponse getDashboard(String institutionId, String metric, String period);

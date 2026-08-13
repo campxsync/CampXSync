@@ -1,7 +1,7 @@
-package com.campsync.platform.controller;
+package com.campxsync.platform.controller;
 
-import com.campsync.platform.dto.DataGovernanceDtos.*;
-import com.campsync.platform.service.DataGovernanceService;
+import com.campxsync.platform.dto.DataGovernanceDtos.*;
+import com.campxsync.platform.service.DataGovernanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;

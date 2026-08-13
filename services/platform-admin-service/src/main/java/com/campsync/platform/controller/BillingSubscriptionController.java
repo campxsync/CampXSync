@@ -1,7 +1,7 @@
-package com.campsync.platform.controller;
+package com.campxsync.platform.controller;
 
-import com.campsync.platform.dto.BillingSubscriptionDtos.*;
-import com.campsync.platform.service.BillingSubscriptionService;
+import com.campxsync.platform.dto.BillingSubscriptionDtos.*;
+import com.campxsync.platform.service.BillingSubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;

@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.SecurityComplianceDtos.*;
+import com.campxsync.platform.dto.SecurityComplianceDtos.*;
 import java.util.List;
 
 public interface SecurityComplianceService {

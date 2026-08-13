@@ -1,12 +1,13 @@
-package com.campsync.college.service.impl;
+package com.campxsync.college.service.impl;
 
-import com.campsync.college.dto.CollegeAuditDtos.*;
-import com.campsync.college.service.CollegeAuditService;
+import com.campxsync.college.dto.CollegeAuditDtos.*;
+import com.campxsync.college.service.CollegeAuditService;
 import logger.logging.AppLogger;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -14,7 +15,8 @@ public class CollegeAuditServiceImpl implements CollegeAuditService {
 
     private static final AppLogger log = AppLogger.getLogger(CollegeAuditServiceImpl.class);
 
-    private final List<CollegeAuditLogResponse> tenantAuditLogs = new ArrayList<>();
+    // CopyOnWriteArrayList used instead of ArrayList for thread-safety under concurrent reads/writes
+    private final List<CollegeAuditLogResponse> tenantAuditLogs = new CopyOnWriteArrayList<>();
 
     public CollegeAuditServiceImpl() {
         Map<String, Object> p1 = new HashMap<>(); p1.put("userId", "usr-101"); p1.put("profileType", "faculty");

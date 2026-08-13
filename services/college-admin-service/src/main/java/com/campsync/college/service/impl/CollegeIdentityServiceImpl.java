@@ -1,7 +1,7 @@
-package com.campsync.college.service.impl;
+package com.campxsync.college.service.impl;
 
-import com.campsync.college.dto.CollegeIdentityDtos.*;
-import com.campsync.college.service.CollegeIdentityService;
+import com.campxsync.college.dto.CollegeIdentityDtos.*;
+import com.campxsync.college.service.CollegeIdentityService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import logger.enums.UserStatus;
 
 @Service
 public class CollegeIdentityServiceImpl implements CollegeIdentityService {
@@ -34,7 +35,7 @@ public class CollegeIdentityServiceImpl implements CollegeIdentityService {
     @Override
     public UserResponse createUser(String institutionId, CreateUserRequest request) {
         log.info("Request to create user for institutionId: {}, name={}, profileType={}", institutionId, request.getName(), request.getProfileType());
-        String id = "usr-" + UUID.randomUUID().toString().substring(0, 8);
+        String id = "usr-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         Map<String, Object> prof = request.getProfile() != null ? request.getProfile() : Collections.emptyMap();
 
@@ -72,6 +73,7 @@ public class CollegeIdentityServiceImpl implements CollegeIdentityService {
             .filter(u -> u.getInstitutionId().equalsIgnoreCase(institutionId))
             .filter(u -> profileType == null || u.getProfileType().equalsIgnoreCase(profileType))
             .filter(u -> status == null || u.getStatus().equalsIgnoreCase(status))
+            .sorted(java.util.Comparator.comparing(UserRecord::getCreatedAt))
             .collect(Collectors.toList());
 
         int total = filtered.size();
@@ -92,29 +94,28 @@ public class CollegeIdentityServiceImpl implements CollegeIdentityService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with ID '" + id + "' not found.");
         }
 
-        String currentStatus = existing.getStatus().toLowerCase();
-        String targetStatus = status.toLowerCase();
-
-        // Story 13 Lifecycle State Machine:
-        // active <-> suspended
-        // active/suspended -> deactivated
-        boolean validTransition;
-        if ("active".equals(currentStatus)) {
-            validTransition = "suspended".equals(targetStatus) || "deactivated".equals(targetStatus);
-        } else if ("suspended".equals(currentStatus)) {
-            validTransition = "active".equals(targetStatus) || "deactivated".equals(targetStatus);
-        } else {
-            validTransition = false;
+        UserStatus currentStatusEnum;
+        try {
+            currentStatusEnum = logger.enums.UserStatus.fromApiValue(existing.getStatus());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stored user has unrecognised status: '" + existing.getStatus() + "'");
         }
 
-        if (!validTransition) {
+        UserStatus targetStatusEnum;
+        try {
+            targetStatusEnum = logger.enums.UserStatus.fromApiValue(status);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        if (!currentStatusEnum.canTransitionTo(targetStatusEnum)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid user status transition from '" + currentStatus + "' to '" + targetStatus + "'");
+                "Invalid user status transition from '" + existing.getStatus() + "' to '" + status + "'");
         }
 
         UserRecord updated = new UserRecord(
             existing.getId(), existing.getInstitutionId(), existing.getProfileType(), existing.getName(), existing.getEmail(),
-            targetStatus, existing.getProfile(), existing.getCreatedAt(), Instant.now()
+            targetStatusEnum.toApiValue(), existing.getProfile(), existing.getCreatedAt(), Instant.now()
         );
 
         userStore.put(id, updated);

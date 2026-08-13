@@ -1,6 +1,6 @@
-package com.campsync.college.service;
+package com.campxsync.college.service;
 
-import com.campsync.college.dto.CollegeConfigDtos.*;
+import com.campxsync.college.dto.CollegeConfigDtos.*;
 import java.util.List;
 
 public interface CollegeConfigService {

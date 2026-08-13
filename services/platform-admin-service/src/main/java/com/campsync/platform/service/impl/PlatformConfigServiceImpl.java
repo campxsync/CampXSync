@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.PlatformConfigDtos.*;
-import com.campsync.platform.service.PlatformConfigService;
+import com.campxsync.platform.dto.PlatformConfigDtos.*;
+import com.campxsync.platform.service.PlatformConfigService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;

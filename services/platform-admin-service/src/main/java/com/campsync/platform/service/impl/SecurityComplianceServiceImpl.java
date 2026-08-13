@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.SecurityComplianceDtos.*;
-import com.campsync.platform.service.SecurityComplianceService;
+import com.campxsync.platform.dto.SecurityComplianceDtos.*;
+import com.campxsync.platform.service.SecurityComplianceService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -36,7 +36,7 @@ public class SecurityComplianceServiceImpl implements SecurityComplianceService 
     @Override
     public ComplianceCheckResultResponse getLatestResultForInstitute(String institutionId) {
         return resultsStore.computeIfAbsent(institutionId, id -> new ComplianceCheckResultResponse(
-            "chk-" + UUID.randomUUID().toString().substring(0, 8),
+            "chk-" + UUID.randomUUID().toString().replace("-", ""),
             id, true, Collections.emptyList(), Instant.now()
         ));
     }

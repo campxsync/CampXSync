@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.PlatformRbacDtos.*;
-import com.campsync.platform.service.PlatformRbacService;
+import com.campxsync.platform.dto.PlatformRbacDtos.*;
+import com.campxsync.platform.service.PlatformRbacService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -44,7 +44,7 @@ public class PlatformRbacServiceImpl implements PlatformRbacService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Platform role with name '" + request.getName() + "' already exists.");
         }
 
-        String id = "role-" + UUID.randomUUID().toString().substring(0, 8);
+        String id = "role-" + UUID.randomUUID().toString().replace("-", "");
         RoleEntry role = new RoleEntry(id, request.getName(), request.getDescription(), request.getPermissions(), Instant.now());
         roles.put(id, role);
 
@@ -76,7 +76,7 @@ public class PlatformRbacServiceImpl implements PlatformRbacService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Role with ID '" + request.getRoleId() + "' not found.");
         }
 
-        String assignmentId = "assign-" + UUID.randomUUID().toString().substring(0, 8);
+        String assignmentId = "assign-" + UUID.randomUUID().toString().replace("-", "");
         AssignmentEntry assignment = new AssignmentEntry(assignmentId, request.getStaffId(), role.getId(), role.getName(), Instant.now(), actor);
         assignments.put(assignmentId, assignment);
 
@@ -116,11 +116,6 @@ public class PlatformRbacServiceImpl implements PlatformRbacService {
             if (role != null) {
                 effectivePermissions.addAll(role.getPermissions());
             }
-        }
-
-        if ("superadmin-1".equalsIgnoreCase(staffId) || staffAssignments.isEmpty()) {
-            assignedRoleNames.add("Super Admin");
-            effectivePermissions.addAll(roles.get("role-super-admin").getPermissions());
         }
 
         return new EffectivePermissionsResponse(staffId, assignedRoleNames, effectivePermissions, Instant.now());

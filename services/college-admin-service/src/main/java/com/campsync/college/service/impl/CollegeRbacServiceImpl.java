@@ -1,7 +1,7 @@
-package com.campsync.college.service.impl;
+package com.campxsync.college.service.impl;
 
-import com.campsync.college.dto.CollegeRbacDtos.*;
-import com.campsync.college.service.CollegeRbacService;
+import com.campxsync.college.dto.CollegeRbacDtos.*;
+import com.campxsync.college.service.CollegeRbacService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -51,7 +51,7 @@ public class CollegeRbacServiceImpl implements CollegeRbacService {
             }
         }
 
-        String id = "role-" + UUID.randomUUID().toString().substring(0, 8);
+        String id = "role-" + UUID.randomUUID().toString().replace("-", "");
         RoleEntry role = new RoleEntry(id, institutionId, request.getName(), request.getDescription(), request.getPermissions(), Instant.now());
         roleStore.put(id, role);
 
@@ -83,7 +83,7 @@ public class CollegeRbacServiceImpl implements CollegeRbacService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Role with ID '" + request.getRoleId() + "' not found.");
         }
 
-        String assignmentId = "assign-" + UUID.randomUUID().toString().substring(0, 8);
+        String assignmentId = "assign-" + UUID.randomUUID().toString().replace("-", "");
         String scope = request.getScope() != null ? request.getScope() : "INSTITUTION_WIDE";
         AssignmentEntry assignment = new AssignmentEntry(assignmentId, institutionId, request.getUserId(), role.getId(), role.getName(), scope, Instant.now());
         assignmentStore.put(assignmentId, assignment);
@@ -118,16 +118,7 @@ public class CollegeRbacServiceImpl implements CollegeRbacService {
             }
         }
 
-        // Default admin permissions if unassigned demo user
-        if ("usr-admin-1".equalsIgnoreCase(userId) || userAssignments.isEmpty()) {
-            roles.add("College Admin");
-            RoleEntry defaultAdmin = roleStore.get("role-college-admin");
-            if (defaultAdmin != null) {
-                permissions.addAll(defaultAdmin.getPermissions());
-            }
-        }
-
-        // Story 36 Isolation Check: Ensure platform-tier permissions never leak
+        // Story 36 Isolation Check: Ensure platform-tier permissions never leak into tenant scope
         permissions.removeIf(p -> p.startsWith("platform:"));
 
         return new EffectiveTenantPermissionsResponse(userId, institutionId, roles, permissions, Instant.now());

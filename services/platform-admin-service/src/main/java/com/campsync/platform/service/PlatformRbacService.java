@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.PlatformRbacDtos.*;
+import com.campxsync.platform.dto.PlatformRbacDtos.*;
 import java.util.List;
 
 public interface PlatformRbacService {

@@ -1,6 +1,6 @@
-package com.campsync.college.service;
+package com.campxsync.college.service;
 
-import com.campsync.college.dto.CollegeRbacDtos.*;
+import com.campxsync.college.dto.CollegeRbacDtos.*;
 import java.util.List;
 
 public interface CollegeRbacService {

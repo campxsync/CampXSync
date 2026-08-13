@@ -9,8 +9,20 @@ spring:
 
 gateway:
   jwt:
-    secret: "super_secret_signing_key_for_campxsync_platform_2026"
+    # REQUIRED: Set via environment variable GATEWAY_JWT_SECRET in staging/production.
+    # Never use a hardcoded value here. The value below is for local development only.
+    # In Kubernetes, inject via a Secret mounted as an env var.
+    secret: "${GATEWAY_JWT_SECRET:local-dev-secret-change-before-any-deployment}"
     issuer: "campxsync"
+  mock:
+    auth:
+      # SECURITY: Set to false in staging and production. When true, any request with
+      # an X-User-Id header bypasses JWT validation. For local development ONLY.
+      enabled: true
+  cors:
+    # Comma-separated list of allowed frontend origins.
+    # Override via GATEWAY_CORS_ALLOWED_ORIGINS env var in staging/production.
+    allowed-origins: "http://localhost:3000,http://localhost:5173,http://localhost:8080"
   services:
     platform: "http://localhost:8088"
     college: "http://localhost:8089"

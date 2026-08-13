@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,11 +24,26 @@ public class JwtAuthenticationFilter implements Filter {
     private static final AppLogger log = AppLogger.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtProvider jwtProvider;
+    private final boolean mockAuthEnabled;
 
     public JwtAuthenticationFilter(
-            @Value("${gateway.jwt.secret:super_secret_signing_key_for_campxsync_platform_2026}") String secret,
-            @Value("${gateway.jwt.issuer:campxsync}") String issuer) {
+            @Value("${gateway.jwt.secret}") String secret,
+            @Value("${gateway.jwt.issuer:campxsync}") String issuer,
+            @Value("${gateway.mock.auth.enabled:false}") boolean mockAuthEnabled) {
         this.jwtProvider = new JwtProvider(secret, issuer);
+        this.mockAuthEnabled = mockAuthEnabled;
+    }
+
+    @PostConstruct
+    public void validateConfig() {
+        if (mockAuthEnabled) {
+            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            log.warn("!! SECURITY WARNING: gateway.mock.auth.enabled=true             !!");
+            log.warn("!! Mock header authentication is ACTIVE. Any caller can bypass  !!");
+            log.warn("!! JWT verification by sending X-User-Id header. This setting   !!");
+            log.warn("!! MUST be false in staging and production environments.         !!");
+            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
     }
 
     @Override
@@ -67,12 +83,14 @@ public class JwtAuthenticationFilter implements Filter {
             }
         }
 
-        // Fallback for Mock Headers if Bearer JWT is omitted (Development / Testing Mode)
-        if (principal == null) {
+        // Fallback for Mock Headers — ONLY when explicitly enabled via gateway.mock.auth.enabled=true
+        // This must NEVER be true in staging or production environments.
+        if (principal == null && mockAuthEnabled) {
             String userId = httpRequest.getHeader(AuditConstants.HEADER_USER_ID);
             String institutionId = httpRequest.getHeader("X-Institution-Id");
             if (userId != null) {
-                principal = new UserPrincipal(userId, "System User", "user@campxsync.com", Arrays.asList("MEMBER"), institutionId);
+                log.debug("Mock auth active: creating principal for userId={}", userId);
+                principal = new UserPrincipal(userId, "Mock User", "mock@campxsync.com", Arrays.asList("MEMBER"), institutionId);
             }
         }
 

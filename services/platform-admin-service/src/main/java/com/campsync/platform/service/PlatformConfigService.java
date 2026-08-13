@@ -1,6 +1,6 @@
-package com.campsync.platform.service;
+package com.campxsync.platform.service;
 
-import com.campsync.platform.dto.PlatformConfigDtos.*;
+import com.campxsync.platform.dto.PlatformConfigDtos.*;
 import java.util.List;
 
 public interface PlatformConfigService {

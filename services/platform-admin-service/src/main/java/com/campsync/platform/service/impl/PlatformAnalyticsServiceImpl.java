@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.PlatformAnalyticsDtos.*;
-import com.campsync.platform.service.PlatformAnalyticsService;
+import com.campxsync.platform.dto.PlatformAnalyticsDtos.*;
+import com.campxsync.platform.service.PlatformAnalyticsService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

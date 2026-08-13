@@ -44,7 +44,6 @@ public class UserPrincipal {
         return "UserPrincipal{" +
                 "userId='" + userId + '\'' +
                 ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
                 ", roles=" + roles +
                 ", tenantId='" + tenantId + '\'' +
                 '}';

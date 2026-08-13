@@ -1,20 +1,26 @@
 package logger.logging;
 
 import logger.annotation.LogExecution;
+import logger.annotation.Sensitive;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.lang.reflect.Parameter;
 
 /**
  * Aspect for intercepting methods annotated with @LogExecution or within classes annotated with @LogExecution.
  * Logs method entry, arguments, exit, execution duration, and exceptions automatically using AppLogger.
+ *
+ * PII Protection: Parameters annotated with @Sensitive are masked as "[REDACTED]" in log output.
+ * Use @Sensitive on any parameter containing email addresses, passwords, tokens, or other PII.
  */
 @Aspect
 public class MethodLoggingAspect {
+
+    private static final String REDACTED = "[REDACTED]";
 
     @Around("@annotation(logger.annotation.LogExecution) || @within(logger.annotation.LogExecution)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -35,7 +41,8 @@ public class MethodLoggingAspect {
         boolean logResult = annotation == null || annotation.logResult();
 
         if (logArgs && args != null && args.length > 0) {
-            log.info("--> ENTRY Method: {}() | Args: {}", methodName, Arrays.toString(args));
+            Object[] maskedArgs = maskSensitiveArgs(method, args);
+            log.info("--> ENTRY Method: {}() | Args: {}", methodName, java.util.Arrays.toString(maskedArgs));
         } else {
             log.info("--> ENTRY Method: {}()", methodName);
         }
@@ -56,5 +63,22 @@ public class MethodLoggingAspect {
             log.error("<-- EXCEPTION Method: {}() | Duration: {}ms | Error: {}", methodName, duration, t.getMessage());
             throw t;
         }
+    }
+
+    /**
+     * Returns a copy of the args array with sensitive parameters replaced by "[REDACTED]".
+     * A parameter is considered sensitive if it is annotated with @Sensitive.
+     */
+    private Object[] maskSensitiveArgs(Method method, Object[] args) {
+        Parameter[] parameters = method.getParameters();
+        Object[] masked = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            if (i < parameters.length && parameters[i].isAnnotationPresent(Sensitive.class)) {
+                masked[i] = REDACTED;
+            } else {
+                masked[i] = args[i];
+            }
+        }
+        return masked;
     }
 }

@@ -1,4 +1,4 @@
-package com.campsync.college.dto;
+package com.campxsync.college.dto;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;

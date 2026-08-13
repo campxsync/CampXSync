@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.BillingSubscriptionDtos.*;
-import com.campsync.platform.service.BillingSubscriptionService;
+import com.campxsync.platform.dto.BillingSubscriptionDtos.*;
+import com.campxsync.platform.service.BillingSubscriptionService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -32,7 +32,7 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
     public BillingAccountResponse getBillingAccount(String institutionId) {
         log.debug("Fetching billing account for institutionId: {}", institutionId);
         AccountEntry account = accountStore.computeIfAbsent(institutionId, id -> new AccountEntry(
-            "bill-" + UUID.randomUUID().toString().substring(0, 8),
+            "bill-" + UUID.randomUUID().toString().replace("-", ""),
             id, "plan-starter", "ACTIVE", BigDecimal.ZERO, Instant.now(), new CopyOnWriteArrayList<>()
         ));
         return mapToResponse(account);
@@ -44,7 +44,7 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
         AccountEntry account = accountStore.get(institutionId);
         if (account == null) {
             account = accountStore.computeIfAbsent(institutionId, id -> new AccountEntry(
-                "bill-" + UUID.randomUUID().toString().substring(0, 8),
+                "bill-" + UUID.randomUUID().toString().replace("-", ""),
                 id, "plan-starter", "ACTIVE", BigDecimal.ZERO, Instant.now(), new CopyOnWriteArrayList<>()
             ));
         }
@@ -65,7 +65,7 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
                 "Settlement failed for plan change to '" + request.getNewPlanId() + "'. Account reverted to '" + account.getPlanId() + "'.");
         }
 
-        String invId = "inv-" + UUID.randomUUID().toString().substring(0, 8);
+        String invId = "inv-" + UUID.randomUUID().toString().replace("-", "");
         account.getInvoices().add(new InvoiceSummary(invId, new BigDecimal("499.00"), "PAID", Instant.now()));
 
         AccountEntry updated = new AccountEntry(
@@ -93,8 +93,8 @@ public class BillingSubscriptionServiceImpl implements BillingSubscriptionServic
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Billing account for institution '" + institutionId + "' not found.");
         }
 
-        String txnId = "txn-" + UUID.randomUUID().toString().substring(0, 8);
-        String invId = "inv-" + UUID.randomUUID().toString().substring(0, 8);
+        String txnId = "txn-" + UUID.randomUUID().toString().replace("-", "");
+        String invId = "inv-" + UUID.randomUUID().toString().replace("-", "");
         account.getInvoices().add(new InvoiceSummary(invId, request.getAmount(), "PAID", Instant.now()));
 
         return new SettlementResponse(txnId, institutionId, request.getAmount(), "SUCCESS", "Charge settled successfully via Payment Gateway", Instant.now());

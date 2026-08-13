@@ -1,7 +1,7 @@
-package com.campsync.college.controller;
+package com.campxsync.college.controller;
 
-import com.campsync.college.dto.CollegeAuditDtos.*;
-import com.campsync.college.service.CollegeAuditService;
+import com.campxsync.college.dto.CollegeAuditDtos.*;
+import com.campxsync.college.service.CollegeAuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class CollegeAuditController {
     @GetMapping
     @Operation(summary = "Query the institution's audit trail", description = "Fetches paginated audit logs implicitly scoped to the caller's institution")
     public ResponseEntity<PaginatedCollegeAuditLogsResponse> queryAuditLogs(
-            @RequestHeader(name = "X-Institution-Id", defaultValue = "inst-101") String institutionId,
+            @RequestHeader(name = "X-Institution-Id", required = true) String institutionId,
             @RequestParam(name = "event_type", required = false) String eventType,
             @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "0") int page,

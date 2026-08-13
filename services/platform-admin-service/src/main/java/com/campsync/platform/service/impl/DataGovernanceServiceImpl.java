@@ -1,7 +1,7 @@
-package com.campsync.platform.service.impl;
+package com.campxsync.platform.service.impl;
 
-import com.campsync.platform.dto.DataGovernanceDtos.*;
-import com.campsync.platform.service.DataGovernanceService;
+import com.campxsync.platform.dto.DataGovernanceDtos.*;
+import com.campxsync.platform.service.DataGovernanceService;
 import logger.constants.AuditConstants;
 import logger.logging.AppLogger;
 import logger.logging.AuditLogger;
@@ -36,7 +36,7 @@ public class DataGovernanceServiceImpl implements DataGovernanceService {
     @Override
     public PolicyResponse createPolicy(CreatePolicyRequest request) {
         log.info("Creating policy name='{}', type='{}', appliesTo='{}'", request.getName(), request.getType(), request.getAppliesTo());
-        String id = "pol-" + UUID.randomUUID().toString().substring(0, 8);
+        String id = "pol-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
 
         PolicyEntry entry = new PolicyEntry(

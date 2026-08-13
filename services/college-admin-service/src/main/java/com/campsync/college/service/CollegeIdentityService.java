@@ -1,6 +1,6 @@
-package com.campsync.college.service;
+package com.campxsync.college.service;
 
-import com.campsync.college.dto.CollegeIdentityDtos.*;
+import com.campxsync.college.dto.CollegeIdentityDtos.*;
 
 public interface CollegeIdentityService {
     UserResponse createUser(String institutionId, CreateUserRequest request);
