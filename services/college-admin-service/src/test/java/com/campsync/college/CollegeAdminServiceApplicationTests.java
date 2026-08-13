@@ -258,6 +258,112 @@ public class CollegeAdminServiceApplicationTests {
         org.junit.jupiter.api.Assertions.assertFalse(responseStr.contains("platform:"), "Tenant effective permissions must never contain platform-tier permissions!");
     }
 
+    // --- NEGATIVE TEST CASES ---
+
+    @Test
+    @DisplayName("NEG 01: Missing X-Institution-Id Header (HTTP 400 Bad Request)")
+    public void testNeg01_MissingInstitutionHeader() throws Exception {
+        MvcResult res = mockMvc.perform(get("/v1/users"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 01: GET /v1/users (No X-Institution-Id)", "None", "400 Bad Request", "400 Bad Request (Header Missing)");
+    }
+
+    @Test
+    @DisplayName("NEG 02: Create User with Invalid Email Format (HTTP 400 Bad Request)")
+    public void testNeg02_CreateUserInvalidEmail() throws Exception {
+        String body = "{\"profileType\":\"student\",\"name\":\"Bad Email User\",\"email\":\"not-an-email-address\"}";
+        MvcResult res = mockMvc.perform(post("/v1/users")
+                        .header("X-Institution-Id", "inst-101")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 02: POST /v1/users (Invalid Email)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 03: Create User with Blank Name (HTTP 400 Bad Request)")
+    public void testNeg03_CreateUserBlankName() throws Exception {
+        String body = "{\"profileType\":\"student\",\"name\":\"\",\"email\":\"valid@oxford.edu\"}";
+        MvcResult res = mockMvc.perform(post("/v1/users")
+                        .header("X-Institution-Id", "inst-101")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 03: POST /v1/users (Blank Name)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 04: Get Non-Existent User (HTTP 404 Not Found)")
+    public void testNeg04_GetUserNotFound() throws Exception {
+        MvcResult res = mockMvc.perform(get("/v1/users/usr-nonexistent-999")
+                        .header("X-Institution-Id", "inst-101"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 04: GET /v1/users/usr-nonexistent-999", "None", "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
+    @Test
+    @DisplayName("NEG 05: Cross-Tenant User Access Rejection (HTTP 404 Not Found)")
+    public void testNeg05_CrossTenantAccess() throws Exception {
+        MvcResult res = mockMvc.perform(get("/v1/users/usr-101")
+                        .header("X-Institution-Id", "inst-wrong-tenant-999"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 05: GET /v1/users/usr-101 (Wrong Tenant)", "None", "404 Not Found", "404 User not found for institution inst-wrong-tenant-999");
+    }
+
+    @Test
+    @DisplayName("NEG 06: Invalid User Status Transition (HTTP 400 Bad Request)")
+    public void testNeg06_InvalidUserStatusTransition() throws Exception {
+        String body = "{\"status\": \"invalid_status_value\"}";
+        MvcResult res = mockMvc.perform(patch("/v1/users/usr-101/status")
+                        .header("X-Institution-Id", "inst-101")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 06: PATCH /v1/users/usr-101/status (Invalid Status)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 07: Define Custom Role with Blank Name (HTTP 400 Bad Request)")
+    public void testNeg07_CreateRoleBlankName() throws Exception {
+        String body = "{\"name\":\"\",\"permissions\":[\"college:users:read\"]}";
+        MvcResult res = mockMvc.perform(post("/v1/roles")
+                        .header("X-Institution-Id", "inst-101")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 07: POST /v1/roles (Blank Name)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 08: Grant Role with Blank User ID (HTTP 400 Bad Request)")
+    public void testNeg08_GrantRoleBlankUserId() throws Exception {
+        String body = "{\"userId\":\"\",\"roleId\":\"role-college-admin\"}";
+        MvcResult res = mockMvc.perform(post("/v1/role-assignments")
+                        .header("X-Institution-Id", "inst-101")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 08: POST /v1/role-assignments (Blank UserId)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 09: Revoke Non-Existent Role Assignment (HTTP 404 Not Found)")
+    public void testNeg09_RevokeNonExistentRole() throws Exception {
+        MvcResult res = mockMvc.perform(delete("/v1/role-assignments/assign-nonexistent-999")
+                        .header("X-Institution-Id", "inst-101"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 09: DELETE /v1/role-assignments/assign-nonexistent-999", "None", "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
     private void printTestOutput(String api, String input, String status, String output) {
         System.out.println("--------------------------------------------------");
         System.out.println("TESTED API: " + api);

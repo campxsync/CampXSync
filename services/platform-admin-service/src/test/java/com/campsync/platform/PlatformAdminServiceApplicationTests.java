@@ -346,6 +346,95 @@ public class PlatformAdminServiceApplicationTests {
                 .andExpect(jsonPath("$.content").isEmpty());
     }
 
+    // --- NEGATIVE TEST CASES ---
+
+    @Test
+    @DisplayName("NEG 01: Provision Institute with Blank Name (HTTP 400 Bad Request)")
+    public void testNeg01_ProvisionInstituteBlankName() throws Exception {
+        String body = "{\"name\":\"\",\"subdomain\":\"invalid-subdomain\",\"planId\":\"plan-enterprise\"}";
+        MvcResult res = mockMvc.perform(post("/v1/institutes").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 01: POST /v1/institutes (Blank Name)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 02: Get Non-Existent Institute (HTTP 404 Not Found)")
+    public void testNeg02_GetInstituteNotFound() throws Exception {
+        MvcResult res = mockMvc.perform(get("/v1/institutes/inst-nonexistent-999"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 02: GET /v1/institutes/inst-nonexistent-999", "None", "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
+    @Test
+    @DisplayName("NEG 03: Invalid Institute Status Transition (HTTP 400 Bad Request)")
+    public void testNeg03_InvalidInstituteStatusTransition() throws Exception {
+        String body = "{\"status\":\"invalid_status_enum\"}";
+        MvcResult res = mockMvc.perform(patch("/v1/institutes/inst-101/status").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 03: PATCH /v1/institutes/inst-101/status (Invalid Status)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 04: Define Platform Role with Blank Name (HTTP 400 Bad Request)")
+    public void testNeg04_CreateRoleBlankName() throws Exception {
+        String body = "{\"name\":\"\",\"permissions\":[\"platform:institutes:read\"]}";
+        MvcResult res = mockMvc.perform(post("/v1/platform-roles").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 04: POST /v1/platform-roles (Blank Name)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 05: Grant Platform Role with Blank Staff ID (HTTP 400 Bad Request)")
+    public void testNeg05_GrantRoleBlankStaffId() throws Exception {
+        String body = "{\"staffId\":\"\",\"roleId\":\"role-super-admin\"}";
+        MvcResult res = mockMvc.perform(post("/v1/platform-role-assignments").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 05: POST /v1/platform-role-assignments (Blank StaffId)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 06: Revoke Non-Existent Platform Role Assignment (HTTP 404 Not Found)")
+    public void testNeg06_RevokeNonExistentRole() throws Exception {
+        MvcResult res = mockMvc.perform(delete("/v1/platform-role-assignments/assign-nonexistent-999"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 06: DELETE /v1/platform-role-assignments/assign-nonexistent-999", "None", "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
+    @Test
+    @DisplayName("NEG 07: Trigger Charge with Negative Amount (HTTP 400 Bad Request)")
+    public void testNeg07_TriggerChargeNegativeAmount() throws Exception {
+        String body = "{\"amount\": -50.00, \"description\": \"Negative charge test\"}";
+        MvcResult res = mockMvc.perform(post("/v1/billing-accounts/inst-101/charge").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        printTestOutput("NEG 07: POST /v1/billing-accounts/inst-101/charge (Negative Amount)", body, "400 Bad Request", res.getResponse().getContentAsString());
+    }
+
+    @Test
+    @DisplayName("NEG 08: Update Non-Existent Policy (HTTP 404 Not Found)")
+    public void testNeg08_UpdateNonExistentPolicy() throws Exception {
+        String body = "{\"name\":\"Updated Non-Existent Policy\"}";
+        MvcResult res = mockMvc.perform(patch("/v1/policies/pol-nonexistent-999").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 08: PATCH /v1/policies/pol-nonexistent-999", body, "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
+    @Test
+    @DisplayName("NEG 09: Retire Non-Existent Policy (HTTP 404 Not Found)")
+    public void testNeg09_RetireNonExistentPolicy() throws Exception {
+        MvcResult res = mockMvc.perform(delete("/v1/policies/pol-nonexistent-999"))
+                .andExpect(status().isNotFound())
+                .andReturn();
+        printTestOutput("NEG 09: DELETE /v1/policies/pol-nonexistent-999", "None", "404 Not Found", res.getResponse().getErrorMessage() != null ? res.getResponse().getErrorMessage() : "404 Not Found");
+    }
+
     private void printTestOutput(String api, String input, String status, String output) {
         System.out.println("--------------------------------------------------");
         System.out.println("TESTED API: " + api);
